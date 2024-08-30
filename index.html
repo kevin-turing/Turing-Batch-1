@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+    <!-- Import RLHF - 27284 HTML files -->
+<div id="content"></div>
+
+<script>
+    async function loadPage(file) {
+        try {
+            const response = await fetch('RLHF - 27284/' + file);
+            if (!response.ok) throw new Error('Failed to load ' + file);
+            const content = await response.text();
+            document.getElementById('content').innerHTML = content;
+        } catch (error) {
+            console.error('Error loading the page:', error);
+            document.getElementById('content').innerHTML = '<p>Error loading the page.</p>';
+        }
+    }
+</script>
+
+<!-- Buttons to load each HTML file -->
+<button onclick="loadPage('Turn1ModelA.html')">Turn1ModelA</button>
+<button onclick="loadPage('Turn1ModelB.html')">Turn1ModelB</button>
+<button onclick="loadPage('Turn1IR27284.html')">Turn1IR27284</button>
+<button onclick="loadPage('Turn2ModelA.html')">Turn2ModelA</button>
+<button onclick="loadPage('Turn2ModelB.html')">Turn2ModelB</button>
+<button onclick="loadPage('Turn2IR27284.html')">Turn2IR27284</button>
+<button onclick="loadPage('Turn3ModelA.html')">Turn3ModelA</button>
+<button onclick="loadPage('Turn3ModelB.html')">Turn3ModelB</button>
+<button onclick="loadPage('Turn3IR27284.html')">Turn3IR27284</button>
+<button onclick="loadPage('Turn4ModelA.html')">Turn4ModelA</button>
+<button onclick="loadPage('Turn4ModelB.html')">Turn4ModelB</button>
+<button onclick="loadPage('Turn4IR27284.html')">Turn4IR27284</button>
+<button onclick="loadPage('Turn5ModelA.html')">Turn5ModelA</button>
+<button onclick="loadPage('Turn5ModelB.html')">Turn5ModelB</button>
+<button onclick="loadPage('Turn5IR27284.html')">Turn5IR27284</button>
+</body>
+</html>

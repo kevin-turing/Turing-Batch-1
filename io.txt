@@ -1,0 +1,8 @@
+Turn1ModelA :
+Works Fine (issues observed in testing - `Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'categoryChart' can be reused.` )
+
+Turn1ModelB :
+Works Fine (issues observed in testing - `chart.js:19 Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'categoryBarChart' can be reused.` )
+
+Trun1IR :
+Works fine (Please refer the recording)

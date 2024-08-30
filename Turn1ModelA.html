@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Purchase Data Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.5.1/dist/chart.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .dashboard { display: flex; flex-direction: column; padding: 20px; }
+        .filters, .charts { margin: 10px 0; }
+        #locationFilter { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <input type="file" id="csvFileInput" accept=".csv">
+    <select id="locationFilter">
+        <option value="all">All Locations</option>
+    </select>
+    <div class="charts">
+        <canvas id="categoryChart" width="400" height="200"></canvas>
+        <canvas id="feedbackDownloadsChart" width="400" height="200"></canvas>
+        <canvas id="aiRecommendationChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+<script>
+document.getElementById('csvFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    Papa.parse(file, {
+        header: true,
+        dynamicTyping: true,
+        complete: function(results) {
+            const data = results.data;
+            updateLocationFilter(data);
+            renderCharts(data);
+        }
+    });
+});
+
+function updateLocationFilter(data) {
+    const locations = [...new Set(data.map(item => item.UserLocation))].sort();
+    const select = document.getElementById('locationFilter');
+    locations.forEach(loc => {
+        select.innerHTML += `<option value="${loc}">${loc}</option>`;
+    });
+    select.addEventListener('change', () => renderCharts(data));
+}
+
+function calculateScore(feedback, downloads, isRecommended) {
+    const weight1 = 0.6, weight2 = 0.4, bonus = 0.5;
+    return feedback * weight1 + downloads * weight2 + (isRecommended ? bonus : 0);
+}
+
+function renderCharts(data) {
+    const location = document.getElementById('locationFilter').value;
+    const filteredData = location === 'all' ? data : data.filter(d => d.UserLocation === location);
+
+    // Group by category for counts and scores
+    const categoryData = {};
+    filteredData.forEach(d => {
+        if (!categoryData[d.ProductCategory]) {
+            categoryData[d.ProductCategory] = {count: 0, totalScore: 0, aiRecommended: 0, feedbacks: []};
+        }
+        categoryData[d.ProductCategory].count++;
+        categoryData[d.ProductCategory].totalScore += calculateScore(d.FeedbackScore, 1, d.AI_Recommender_Flag === 'Recommended');
+        categoryData[d.ProductCategory].feedbacks.push(d.FeedbackScore);
+        if (d.AI_Recommender_Flag === 'Recommended') categoryData[d.ProductCategory].aiRecommended++;
+    });
+
+    // Best Categories Chart
+    const bestCategories = Object.entries(categoryData).sort((a, b) => b[1].totalScore - a[1].totalScore).slice(0, 5);
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: bestCategories.map(c => c[0]),
+            datasets: [{
+                label: 'Cumulative Score',
+                data: bestCategories.map(c => c[1].totalScore),
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Feedback vs Downloads
+    new Chart(document.getElementById('feedbackDownloadsChart'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Feedback vs Downloads',
+                data: Object.entries(categoryData).map(c => ({
+                    x: c[1].count, 
+                    y: c[1].feedbacks.reduce((a, b) => a + b, 0) / c[1].feedbacks.length
+                })),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Number of Downloads' }},
+                y: { title: { display: true, text: 'Average Feedback Score' }}
+            }
+        }
+    });
+
+    // AI Recommendation Chart
+    const aiRecData = {
+        labels: ['Recommended', 'Not Recommended'],
+        datasets: [{
+            data: [
+                filteredData.filter(d => d.AI_Recommender_Flag === 'Recommended').length,
+                filteredData.filter(d => d.AI_Recommender_Flag === 'Not Recommended').length
+            ],
+            backgroundColor: ['#FF6384', '#36A2EB']
+        }]
+    };
+    new Chart(document.getElementById('aiRecommendationChart'), {
+        type: 'pie',
+        data: aiRecData
+    });
+}
+
+</script>
+</body>
+</html>

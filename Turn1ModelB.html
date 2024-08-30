@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Data Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .dashboard { max-width: 800px; margin: auto; }
+        .chart-container { width: 100%; height: 300px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Purchase Data Dashboard</h1>
+        <input type="file" id="fileInput" accept=".csv">
+        <select id="locationFilter">
+            <option value="">Select Location</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+
+        <div class="chart-container">
+            <canvas id="categoryBarChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="feedbackPieChart"></canvas>
+        </div>
+        <!-- Additional chart containers as needed -->
+        
+        <table id="dataTable" border="1">
+            <thead><tr><th>UserID</th><th>Username</th>...<th>AI_Recommender_Flag</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.1/papaparse.min.js"></script>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const locationFilter = document.getElementById('locationFilter');
+        const categoryBarChart = document.getElementById('categoryBarChart');
+        const feedbackPieChart = document.getElementById('feedbackPieChart');
+        const tableBody = document.getElementById('tableBody');
+
+        let data = [];
+
+        fileInput.addEventListener('change', (e) => {
+            Papa.parse(fileInput.files[0], {
+                header: true,
+                complete: function(results) {
+                    data = results.data;
+                    populateFilters(data);
+                    updateDashboard(data);
+                }
+            });
+        });
+
+        locationFilter.addEventListener('change', () => {
+            const filteredData = data.filter(item => item.UserLocation === locationFilter.value || locationFilter.value === '');
+            updateDashboard(filteredData);
+        });
+
+        function populateFilters(data) {
+            const locations = [...new Set(data.map(item => item.UserLocation))].sort();
+            locations.forEach(location => {
+                const opt = document.createElement('option');
+                opt.value = location;
+                opt.innerHTML = location;
+                locationFilter.appendChild(opt);
+            });
+        }
+
+        function updateDashboard(data) {
+            const categories = calculateCategoriesScore(data);
+            const feedbackData = calculateFeedbackData(data);
+            drawBarChart(categories);
+            drawPieChart(feedbackData);
+            updateTable(data);
+        }
+
+        function calculateCategoriesScore(data) {
+            // Simulate number of downloads or use real data if available
+            const categoryData = {};
+            data.forEach(item => {
+                if (!categoryData[item.ProductCategory]) {
+                    categoryData[item.ProductCategory] = { score: 0, feedback: 0, downloads: Math.random() * 100 | 0 };
+                }
+                categoryData[item.ProductCategory].score += item.FeedbackScore + (item.AI_Recommender_Flag === 'Recommended' ? 1 : -1);
+                categoryData[item.ProductCategory].feedback += item.FeedbackScore;
+            });
+            return Object.entries(categoryData).map(([category, data]) => ({ category, ...data }));
+        }
+
+        function calculateFeedbackData(data) {
+            const feedbackData = {};
+            data.forEach(item => {
+                if (!feedbackData[item.ProductCategory]) {
+                    feedbackData[item.ProductCategory] = 0;
+                }
+                feedbackData[item.ProductCategory] += item.FeedbackScore;
+            });
+            return feedbackData;
+        }
+
+        function drawBarChart(categories) {
+            new Chart(categoryBarChart, {
+                type: 'bar',
+                data: {
+                    labels: categories.map(c => c.category),
+                    datasets: [{
+                        label: 'Cumulative Score',
+                        data: categories.map(c => c.score),
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function drawPieChart(feedbackData) {
+            const labels = Object.keys(feedbackData);
+            const feedbackValues = Object.values(feedbackData);
+
+            new Chart(feedbackPieChart, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: feedbackValues,
+                        backgroundColor: labels.map(() => `rgba(${Math.random() * 255 | 0}, ${Math.random() * 255 | 0}, ${Math.random() * 255 | 0}, 0.2)`),
+                    }]
+                }
+            });
+        }
+
+        function updateTable(data) {
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                Object.values(item).forEach(val => {
+                    const cell = document.createElement('td');
+                    cell.textContent = val;
+                    row.appendChild(cell);
+                });
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
